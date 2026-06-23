@@ -5,7 +5,6 @@ import (
   "errors"
   "net/http"
   "strconv"
-//   "html/template"
   "github.com/Devtiwo/snippetbox/internal/models"
 )
 
@@ -21,30 +20,12 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
     app.serverError(w, err)
    return
   }
-  for _, snippet := range snippets {
-    fmt.Fprintf(w, "%+v\n", snippet)
-  }
-  // Initailizing a slice containing the paths of the template files to be parsed
-  // The base file must come first, followed by the other template files.
-//   files := []string {
-// 	"./ui/html/base.tmpl",
-// 	"./ui/html/partials/nav.tmpl",
-// 	"./ui/html/pages/home.tmpl",
-//   }
-
-//   // using the template.ParseFiles() function to read the template file and storing it into a template set.
-//   ts, err := template.ParseFiles(files...)
-//   if err != nil {
-// 	app.serverError(w, err)
-//     return
-//   }
-  
-//   // Using the ExecuteTemplate() method on the template set to write the template content as the response body.
-//   // The second parameter in the Execute() methos is used to pass dynamic data to the template.
-//   err = ts.ExecuteTemplate(w, "base", nil)
-//   if err != nil {
-// 	app.serverError(w, err)
-  }
+  // Calling the newTemplateData() helper to get a templateData struct containing the default data
+  data := app.newTemplateData(r)
+  data.Snippets = snippets
+  // Using the new render helper
+  app.render(w, http.StatusOK, "home.tmpl", data)
+}
 
 // Creates a snippetview handler function.
 // Changing the structure of the snippetView handler so it is defined as a method against *application.
@@ -63,7 +44,10 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 	}
 	return
   }
-  fmt.Fprintf(w, "%+v", snippet)
+  data := app.newTemplateData(r)
+  data.Snippet = snippet
+  // Using the new render helper
+  app.render(w, http.StatusOK, "view.tmpl", data)
 }
 
 // Creates a snippetCreate handler function.

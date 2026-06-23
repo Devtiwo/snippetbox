@@ -5,6 +5,7 @@ import (
   "flag"
   "log"
   "net/http"
+  "html/template"
   "database/sql"
   "github.com/Devtiwo/snippetbox/internal/models"
   _ "github.com/go-sql-driver/mysql"
@@ -15,6 +16,7 @@ type application struct {
   errorLog *log.Logger
   infoLog *log.Logger
   snippets *models.SnippetModel
+  templateCache map[string]*template.Template 
 }
 
 func main() {
@@ -42,11 +44,18 @@ func main() {
 
     // Using the defer statement to ensure that the database connection pool is closed before the main() function exits.
 	defer db.Close()
+
+	// initializing a new template cache
+	templateCache, err := newTemplateCache()
+	if err != nil {
+	  errorLog.Fatal(err)
+	}
 	// initializing a new instance of the application struct containing the dependencies.
 	app := &application{
 	  errorLog: errorLog,
 	  infoLog: infoLog,
 	  snippets: &models.SnippetModel{DB: db},
+	  templateCache: templateCache,
 	}
 
 	// Initialize a new http.Server struct. We set the Addr and Handler fields so that the server uses the same network address and routes before and set the errorlog field so that the server now uses the custome errorlog logger in the event of any problems.
