@@ -8,6 +8,8 @@ import (
   "html/template"
   "database/sql"
   "github.com/Devtiwo/snippetbox/internal/models"
+  "github.com/go-playground/form/v4"
+  "github.com/joho/godotenv"
   _ "github.com/go-sql-driver/mysql"
 )
 
@@ -16,15 +18,20 @@ type application struct {
   errorLog *log.Logger
   infoLog *log.Logger
   snippets *models.SnippetModel
-  templateCache map[string]*template.Template 
+  templateCache map[string]*template.Template
+  formDecoder *form.Decoder
 }
 
 func main() {
     // Using the flag package to define a command-line flag named "addr" with a default value of ":4000" and a description of "HTTP network address".
 	addr := flag.String("addr", ":4000", "HTTP network address")
-
+    
+	err := godotenv.Load()
+	if err != nil {
+	  log.Fatal("Error loading .env file")
+	}
 	// Using the flag package to define a command-line flag for mysql dsn string.
-	dsn := flag.String("dsn", "web:adewunmi5020@/snippetbox?parseTime=true", "MySQL data source name")
+	dsn := flag.String("dsn", os.Getenv("DB_DSN"), "MySQL data source name")
 
 	// Calling the flag.Parse() function to parse the command-line flags and store the values in the corresponding variables.
 	flag.Parse()
@@ -50,12 +57,17 @@ func main() {
 	if err != nil {
 	  errorLog.Fatal(err)
 	}
+
+	// Initializing a decoder instance
+	formDecoder := form.NewDecoder()
+
 	// initializing a new instance of the application struct containing the dependencies.
 	app := &application{
 	  errorLog: errorLog,
 	  infoLog: infoLog,
 	  snippets: &models.SnippetModel{DB: db},
 	  templateCache: templateCache,
+	  formDecoder: formDecoder,
 	}
 
 	// Initialize a new http.Server struct. We set the Addr and Handler fields so that the server uses the same network address and routes before and set the errorlog field so that the server now uses the custome errorlog logger in the event of any problems.

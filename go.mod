@@ -3,7 +3,10 @@ module github.com/Devtiwo/snippetbox
 go 1.26.4
 
 require (
+	github.com/go-playground/form/v4 v4.3.0
 	github.com/go-sql-driver/mysql v1.10.0
+	github.com/joho/godotenv v1.5.1
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/justinas/alice v1.2.0
 )
 
