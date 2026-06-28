@@ -4,10 +4,13 @@ import (
   "os"
   "flag"
   "log"
+  "time"
   "net/http"
   "html/template"
   "database/sql"
   "github.com/Devtiwo/snippetbox/internal/models"
+  "github.com/alexedwards/scs/mysqlstore"
+  "github.com/alexedwards/scs/v2"
   "github.com/go-playground/form/v4"
   "github.com/joho/godotenv"
   _ "github.com/go-sql-driver/mysql"
@@ -20,6 +23,7 @@ type application struct {
   snippets *models.SnippetModel
   templateCache map[string]*template.Template
   formDecoder *form.Decoder
+  sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -61,6 +65,12 @@ func main() {
 	// Initializing a decoder instance
 	formDecoder := form.NewDecoder()
 
+    // Using the scs.new() function to initialize a new session manager then configure it to use MySQL database as the session store,
+	// then set a lifetime of 12 hours (so that sessions automatically expire 12 hours after first being created).
+	sessionManager := scs.New()
+	sessionManager.Store =  mysqlstore.New(db)
+	sessionManager.Lifetime = 12 * time.Hour
+
 	// initializing a new instance of the application struct containing the dependencies.
 	app := &application{
 	  errorLog: errorLog,
@@ -68,6 +78,7 @@ func main() {
 	  snippets: &models.SnippetModel{DB: db},
 	  templateCache: templateCache,
 	  formDecoder: formDecoder,
+	  sessionManager: sessionManager,
 	}
 
 	// Initialize a new http.Server struct. We set the Addr and Handler fields so that the server uses the same network address and routes before and set the errorlog field so that the server now uses the custome errorlog logger in the event of any problems.
