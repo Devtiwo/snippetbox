@@ -6,6 +6,7 @@ import (
   "log"
   "time"
   "net/http"
+  "crypto/tls"
   "html/template"
   "database/sql"
   "github.com/Devtiwo/snippetbox/internal/models"
@@ -25,6 +26,12 @@ type application struct {
   formDecoder *form.Decoder
   sessionManager *scs.SessionManager
 }
+
+// Initialize a tls.Config struct to hold the non-default TLS settings we want the server to use. In this case the only thing that we're changing
+// is the curve preferences value, so that only elliptic curves with assembly implementations are used.
+var tlsConfig = &tls.Config {
+  CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+} 
 
 func main() {
     // Using the flag package to define a command-line flag named "addr" with a default value of ":4000" and a description of "HTTP network address".
@@ -70,6 +77,7 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Store =  mysqlstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.Secure = true // Make sure that the Secure attribute is set on our session cookies.
 
 	// initializing a new instance of the application struct containing the dependencies.
 	app := &application{
@@ -86,13 +94,18 @@ func main() {
 	  Addr: *addr,
 	  ErrorLog: errorLog,
 	  Handler: app.routes(), // Calling the new app.routes() method to get the servemux containing our routes.
+	  TLSConfig: tlsConfig,
+	  IdleTimeout: time.Minute, // Add Idle, Read and Write timeouts to the server.
+      ReadTimeout: 5 * time.Second,
+      WriteTimeout: 10 * time.Second,
 	}
 
 	infoLog.Printf("starting server on %s", *addr)
 
 	// Call the ListenAndServe() method on our new http.Server struct.
 	// Since the err variable is already declared, we can use the assignment operator to assign the return value of the ListenAndServe() method to it.
-	err = srv.ListenAndServe()
+	// Use the ListenAndServeTLS() method to start the HTTPS server, then pass in the paths to the TLS certificate and corresponding private key as the two parameters.
+	err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
 	errorLog.Fatal(err)
 }
 
